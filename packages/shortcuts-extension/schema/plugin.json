@@ -560,6 +560,17 @@
       },
       "type": "object"
     },
+    "notebook:copy-output-cell": {
+      "default": {},
+      "properties": {
+        "command": { "default": "notebook:copy-output-cell" },
+        "keys": { "default": [""] },
+        "selector": { "default": ".jp-Notebook:focus" },
+        "title": { "default": "Copy Output of Cell(s)" },
+        "category": { "default": "Notebook Cell Operations" }
+      },
+      "type": "object"
+    },
     "notebook:cut-cell": {
       "default": {},
       "properties": {

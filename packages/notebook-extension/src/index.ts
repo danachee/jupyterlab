@@ -121,6 +121,8 @@ namespace CommandIDs {
 
   export const copy = 'notebook:copy-cell';
 
+  export const copyToSystem = 'notebook:copy-output-cell';
+
   export const pasteAbove = 'notebook:paste-cell-above';
 
   export const pasteBelow = 'notebook:paste-cell-below';
@@ -661,6 +663,11 @@ function activateNotebookHandler(
     rank: 2
   });
   app.contextMenu.addItem({
+    command: CommandIDs.copyToSystem,
+    selector: '.jp-Notebook .jp-Cell',
+    rank: 2
+  });
+  app.contextMenu.addItem({
     command: CommandIDs.pasteBelow,
     selector: '.jp-Notebook .jp-Cell',
     rank: 3
@@ -1174,6 +1181,17 @@ function addCommands(
 
       if (current) {
         return NotebookActions.copy(current.content);
+      }
+    },
+    isEnabled
+  });
+  commands.addCommand(CommandIDs.copyToSystem, {
+    label: 'Copy Cell Output',
+    execute: args => {
+      const current = getCurrent(args);
+
+      if (current) {
+        return NotebookActions.copyToSystem(current.content);
       }
     },
     isEnabled

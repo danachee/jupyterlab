@@ -734,6 +734,15 @@ export namespace NotebookActions {
   }
 
   /**
+   * Copy the selected cell output data to the system clipboard.
+   *
+   * @param notebook - The target notebook widget.
+   */
+  export function copyToSystem(notebook: Notebook): void {
+    Private.copyOutputToSystem(notebook);
+  }
+
+  /**
    * Cut the selected cell data to a clipboard.
    *
    * @param notebook - The target notebook widget.
@@ -1582,6 +1591,91 @@ namespace Private {
       notebook.deselectAll();
     }
     handleState(notebook, state);
+  }
+
+  /**
+   * Copy the output of the selected cell data to the system clipboard
+   *
+   * @param notebook - The target notebook widget.
+   */
+  export function copyOutputToSystem(notebook: Notebook): void {
+    if (!notebook.model || !notebook.activeCell) {
+      return;
+    }
+
+    const state = getState(notebook);
+
+    notebook.mode = 'command';
+
+    let data = notebook.widgets
+      .filter(cell => notebook.isSelectedOrActive(cell))
+      .map(cell => cell.model.toJSON())
+      .map(cellJSON => {
+        if ((cellJSON.metadata as JSONObject).deletable !== undefined) {
+          delete (cellJSON.metadata as JSONObject).deletable;
+        }
+        return cellJSON;
+      });
+
+    let lines = [''];
+    // find the output for all of the selected cells
+    for (let i = 0; i < Object.keys(data).length; i++) {
+      // get the output JSON Object
+      let outs: JSONObject = (data[i] as JSONObject).outputs as JSONObject;
+      // for all of its parts
+      for (let cnt = 0; cnt < Object.keys(outs).length; cnt++) {
+        let vars: JSONObject = outs[cnt] as JSONObject;
+        let text;
+        if (vars.output_type == 'display_data') {
+          // I don't like this, but there doesn't seem to be a good
+          // way to split it otherwise
+          let fakestr = JSON.stringify(vars.data);
+          text = fakestr.split(':')[1].split('"')[1];
+        } else if (vars.output_type == 'stream') {
+          text = vars.text.toString();
+        } else {
+          console.log(
+            'Dana: type is ',
+            vars.output_type,
+            ' and vars is ',
+            vars
+          );
+          text = 'Unsupported output type: ' + vars.output_type;
+        }
+        lines.push(text);
+      }
+    }
+
+    // copy all of this to the system clipboard
+    copyToClipboard(lines.join('\n'));
+
+    notebook.deselectAll();
+    handleState(notebook, state);
+  }
+
+  /**
+   * Local helper function to copy a string to the system clipboard
+   *
+   * @param string - The string to copy
+   */
+  function copyToClipboard(str: string): void {
+    const el = document.createElement('textarea');
+    el.value = str;
+    el.setAttribute('readonly', '');
+    el.style.position = 'absolute';
+    el.style.left = '-9999px';
+    document.body.appendChild(el);
+    const selected =
+      document.getSelection().rangeCount > 0
+        ? document.getSelection().getRangeAt(0)
+        : false;
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    if (selected) {
+      document.getSelection().removeAllRanges();
+      document.getSelection().addRange(selected);
+    }
   }
 
   /**
